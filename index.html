@@ -54,7 +54,7 @@
       min-width: 0;
       display: flex;
       flex-direction: column;
-      align-items: center; /* center table horizontally in this area */
+      align-items: center; /* center table horizontally */
       gap: 0.75rem;
     }
 
@@ -72,18 +72,18 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.05);
       padding: 0.5rem;
 
-      width: 900px;   /* set desired width */
-      height: 600px;  /* set desired height */
-      max-width: 100%; /* responsive on smaller screens */
+      width: 900px;   /* adjust width as desired */
+      height: 600px;  /* adjust height as desired */
+      max-width: 100%;
 
-      overflow: auto; /* scroll inside the window */
+      overflow: auto; /* scrolling */
       margin: 0 auto;
     }
 
     table {
       border-collapse: collapse;
       width: 100%;
-      min-width: max-content; /* keep columns visible, allow horizontal scroll */
+      min-width: max-content;
     }
 
     th, td {
@@ -113,7 +113,6 @@
       background: #f9fafb;
     }
 
-    /* Filter inputs row */
     .filter-input {
       width: 100%;
       padding: 0.25rem 0.35rem;
@@ -128,7 +127,7 @@
       box-shadow: 0 0 0 1px rgba(37,99,235,0.2);
     }
 
-    /* SIDE PANEL WITH EXTRA CONTENT */
+    /* SIDE PANEL */
     .side-panel {
       flex: 1;
       min-width: 220px;
@@ -161,16 +160,6 @@
       margin: 0.5rem 0;
     }
 
-    .side-panel a {
-      color: #60a5fa;
-      text-decoration: none;
-      font-size: 0.85rem;
-    }
-
-    .side-panel a:hover {
-      text-decoration: underline;
-    }
-
     footer {
       padding: 0.5rem 2rem 0.8rem;
       font-size: 0.75rem;
@@ -188,7 +177,7 @@
       }
       .table-wrapper {
         width: 100%;
-        height: 400px; /* smaller fixed height on small screens */
+        height: 400px;
       }
       #status {
         max-width: 100%;
@@ -201,7 +190,9 @@
     <header>
       <div>
         <h1>My Data Table</h1>
-        <div class="subtitle">Live from Google Sheets, with filters & fixed-size scrolling window</div>
+        <div class="subtitle">
+          Pokémon set pricing — filter by Set name only
+        </div>
       </div>
     </header>
 
@@ -210,48 +201,38 @@
       <section class="main-panel">
         <div id="status">Loading data…</div>
         <div class="table-wrapper">
-          <table id="data-table">
-            <!-- Populated by JS -->
-          </table>
+          <table id="data-table"></table>
         </div>
       </section>
 
-      <!-- SIDE PANEL WITH EXTRA CONTENT -->
+      <!-- SIDE PANEL -->
       <aside class="side-panel">
         <h2>Notes / Info Panel</h2>
         <p>
-          This side panel is for any extra content you want next to the table:
-          explanations, instructions, links, or other widgets.
+          First column = <strong>Set</strong> (Pokémon set name) — this is filterable.
+        </p>
+        <p>
+          All other columns are <strong>Rip N Ship content creators</strong> and show pricing data. They are display-only and do not have filters.
         </p>
         <hr />
         <p>
-          Edit this panel directly in <code>index.html</code>. You can add:
-        </p>
-        <ul style="padding-left: 1.1rem; margin: 0; font-size: 0.85rem;">
-          <li>Explanations for each column</li>
-          <li>Rules or methodology</li>
-          <li>Links to external docs or tools</li>
-        </ul>
-        <hr />
-        <p>
-          Example external link:<br />
-          <a href="https://docs.google.com" target="_blank" rel="noopener noreferrer">
-            Open the source Google Sheet
-          </a>
+          You can customize this panel with any info you want: explanations,
+          methodology, update schedule, etc.
         </p>
       </aside>
     </div>
 
     <footer>
-      Data is loaded from a published Google Sheet CSV. Update the sheet → table updates on refresh.
+      Data is loaded live from a Google Sheets CSV. Update the sheet → site updates on refresh.
     </footer>
   </div>
 
   <script>
-    const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR7JmVmiBVMg8BemKADybQiK4GFol_btZQwZHBF0_UW7gWaVfr0g0dKaktZhXldurUBMojyVu56wzHP/pub?output=csv"; // <-- replace this
+    const SHEET_CSV_URL =
+      "https://docs.google.com/spreadsheets/d/e/2PACX-1vR7JmVmiBVMg8BemKADybQiK4GFol_btZQwZHBF0_UW7gWaVfr0g0dKaktZhXldurUBMojyVu56wzHP/pub?output=csv";
 
-    let originalData = []; // full 2D array from CSV (including header row)
-    let filters = [];      // current filter values per column
+    let originalData = [];
+    let filters = [];
 
     async function fetchCsv(url) {
       const res = await fetch(url);
@@ -260,7 +241,6 @@
     }
 
     function parseCsv(text) {
-      // Simple CSV parser, handles basic quoted cells
       const lines = text.trim().split(/\r?\n/);
       return lines.map(line => {
         const result = [];
@@ -272,7 +252,6 @@
 
           if (char === '"') {
             if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
-              // Escaped quote
               current += '"';
               i++;
             } else {
@@ -299,25 +278,30 @@
       const filterRow = document.createElement("tr");
 
       headers.forEach((h, colIndex) => {
-        // Header cell
+        // Header cell (all columns)
         const th = document.createElement("th");
         th.textContent = h;
         headerRow.appendChild(th);
 
-        // Filter cell
+        // Filter row:
+        // Only the first column ("Set") gets a filter input.
         const filterTh = document.createElement("th");
-        const input = document.createElement("input");
-        input.type = "text";
-        input.placeholder = "Filter…";
-        input.className = "filter-input";
-        input.dataset.colIndex = colIndex;
 
-        input.addEventListener("input", () => {
-          filters[colIndex] = input.value.toLowerCase();
-          renderBody();
-        });
+        if (colIndex === 0) {
+          const input = document.createElement("input");
+          input.type = "text";
+          input.placeholder = "Filter Set…";
+          input.className = "filter-input";
+          input.dataset.colIndex = colIndex;
 
-        filterTh.appendChild(input);
+          input.addEventListener("input", () => {
+            filters[colIndex] = input.value.toLowerCase();
+            renderBody();
+          });
+
+          filterTh.appendChild(input);
+        }
+        // For all other columns (content creators / pricing), filterTh stays empty.
         filterRow.appendChild(filterTh);
       });
 
@@ -341,14 +325,14 @@
       const activeFilters = filters.map(f => (f || "").trim());
 
       rows.forEach(row => {
-        const matches = row.every((cell, colIndex) => {
-          const filterValue = activeFilters[colIndex];
-          if (!filterValue) return true;
-          const cellText = (cell || "").toString().toLowerCase();
-          return cellText.includes(filterValue);
-        });
-
-        if (!matches) return;
+        // Only filter by column 0 (Set)
+        const setFilter = activeFilters[0];
+        if (setFilter) {
+          const cellText = (row[0] || "").toString().toLowerCase();
+          if (!cellText.includes(setFilter)) {
+            return; // row doesn't match filter
+          }
+        }
 
         const tr = document.createElement("tr");
         headers.forEach((_, colIndex) => {
@@ -366,7 +350,9 @@
       try {
         statusEl.textContent = "Loading data from Google Sheets…";
 
-        const cacheBust = (SHEET_CSV_URL.includes("?") ? "&" : "?") + "cachebust=" + Date.now();
+        const cacheBust =
+          (SHEET_CSV_URL.includes("?") ? "&" : "?") + "cachebust=" + Date.now();
+
         const csvText = await fetchCsv(SHEET_CSV_URL + cacheBust);
         const data = parseCsv(csvText);
 
@@ -382,10 +368,11 @@
         buildTableSkeleton(headers);
         renderBody();
 
-        statusEl.textContent = "Loaded " + (data.length - 1) + " rows. Use the filters below the headers.";
+        statusEl.textContent =
+          "Loaded " + (data.length - 1) + " rows. Filter by Set using the box under the first column.";
       } catch (err) {
         console.error(err);
-        statusEl.textContent = "Error loading data. Check the console for details.";
+        statusEl.textContent = "Error loading data. Check console.";
       }
     }
 
@@ -393,4 +380,3 @@
   </script>
 </body>
 </html>
-
